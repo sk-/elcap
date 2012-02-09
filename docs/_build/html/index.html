@@ -1,0 +1,336 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to elcap’s documentation! &mdash; elcap 0.1 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.1',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="elcap 0.1 documentation" href="#" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">elcap 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="module-elcap.plugins">
+<span id="welcome-to-elcap-s-documentation"></span><h1>Welcome to elcap&#8217;s documentation!<a class="headerlink" href="#module-elcap.plugins" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="options">
+<h2>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<dl class="cmdoption">
+<dt id="cmdoption--with-mutations">
+<tt class="descname">--with-mutations</tt><tt class="descclassname"></tt><a class="headerlink" href="#cmdoption--with-mutations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Enable plugin Mutations: Plugin that modifies the source code to check if the tests are really testing the code. [NOSE_WITH_MUTATIONS]</p>
+</dd></dl>
+
+<dl class="cmdoption">
+<dt id="cmdoption--mutations-path">
+<tt class="descname">--mutations-path</tt><tt class="descclassname">=DEFAULT</tt><a class="headerlink" href="#cmdoption--mutations-path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Restrict mutations to source files in this path (default: current working directory)</p>
+</dd></dl>
+
+</div>
+<div class="section" id="plugin">
+<h2>Plugin<a class="headerlink" href="#plugin" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="elcap.plugins.Mutations">
+<em class="property">class </em><tt class="descclassname">elcap.plugins.</tt><tt class="descname">Mutations</tt><a class="headerlink" href="#elcap.plugins.Mutations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <tt class="xref py py-class docutils literal"><span class="pre">nose.plugins.base.Plugin</span></tt></p>
+<p>Plugin that modifies the source code to check if the tests are really testing the code.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="source">
+<h2>Source<a class="headerlink" href="#source" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">from</span> <span class="nn">nose.plugins</span> <span class="kn">import</span> <span class="n">Plugin</span>
+<span class="kn">from</span> <span class="nn">nose.core</span> <span class="kn">import</span> <span class="n">TextTestRunner</span>
+<span class="kn">from</span> <span class="nn">nose.selector</span> <span class="kn">import</span> <span class="n">Selector</span>
+<span class="kn">import</span> <span class="nn">nose.core</span>
+
+<span class="kn">from</span> <span class="nn">mutator</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">codegen</span>
+<span class="kn">import</span> <span class="nn">importer</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">difflib</span>
+<span class="kn">import</span> <span class="nn">coverage_plugin</span>
+
+
+<span class="k">class</span> <span class="nc">Quiet</span><span class="p">(</span><span class="n">Plugin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Allows to run the tests and discard all the ouput.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">conf</span><span class="p">):</span>
+        <span class="n">Plugin</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">conf</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">enabled</span> <span class="o">=</span> <span class="bp">True</span>
+
+    <span class="k">def</span> <span class="nf">setOutputStream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">stream</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">NullStream</span><span class="p">()</span>
+
+
+<span class="k">class</span> <span class="nc">NullStream</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;File-like object that acts as /dev/null.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">flush</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">writeln</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+
+<span class="k">class</span> <span class="nc">Mutations</span><span class="p">(</span><span class="n">Plugin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Plugin that modifies the source code to check if the tests are really testing the code.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">,</span> <span class="n">env</span><span class="p">):</span>
+        <span class="n">Plugin</span><span class="o">.</span><span class="n">options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parser</span><span class="p">,</span> <span class="n">env</span><span class="p">)</span>
+        <span class="n">parser</span><span class="o">.</span><span class="n">add_option</span><span class="p">(</span><span class="s">&quot;--mutations-path&quot;</span><span class="p">,</span> <span class="n">action</span><span class="o">=</span><span class="s">&quot;store&quot;</span><span class="p">,</span>
+                          <span class="n">default</span><span class="o">=</span><span class="s">&#39;.&#39;</span><span class="p">,</span>
+                          <span class="n">dest</span><span class="o">=</span><span class="s">&quot;mutations_path&quot;</span><span class="p">,</span>
+                          <span class="n">help</span><span class="o">=</span><span class="s">&quot;Restrict mutations to source files in this path (default: current working directory)&quot;</span><span class="p">)</span>
+        <span class="c">#parser.add_option(&quot;--mutations-exclude&quot;, action=&quot;append&quot;,</span>
+        <span class="c">#                  default=env.get(&#39;NOSE_MUTATIONS_EXCLUDE&#39;),</span>
+        <span class="c">#                  dest=&quot;mutations_exclude&quot;,</span>
+        <span class="c">#                  help=&quot;Exclude mutations for source files found in this path&quot;</span>
+        <span class="c">#                  &quot;[NOSE_MUTATIONS_EXCLUDE]&quot;)</span>
+
+    <span class="k">def</span> <span class="nf">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
+        <span class="n">Plugin</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mutations_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="n">options</span><span class="o">.</span><span class="n">mutations_path</span> <span class="ow">or</span> <span class="s">&#39;.&#39;</span><span class="p">)</span>
+        <span class="c">#self.mutations_exclude = options.mutations_exclude or []</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">stopOnError</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_modules</span> <span class="o">=</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_selector</span> <span class="o">=</span> <span class="n">Selector</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prepareTestRunner</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">runner</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MutationRunner</span><span class="p">(</span><span class="n">stream</span><span class="o">=</span><span class="n">runner</span><span class="o">.</span><span class="n">stream</span><span class="p">,</span> <span class="n">failfast</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">failfast</span><span class="p">,</span> <span class="n">base_modules</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_modules</span><span class="p">,</span> <span class="n">mutations_path</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mutations_path</span><span class="p">,</span> <span class="n">test_selector</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">test_selector</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">MutationRunner</span><span class="p">(</span><span class="n">TextTestRunner</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kw</span><span class="p">):</span>
+        <span class="n">failfast</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;failfast&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mutations_path</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;mutations_path&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_selector</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;test_selector&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_modules</span> <span class="o">=</span> <span class="n">kw</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s">&#39;base_modules&#39;</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">MutationRunner</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kw</span><span class="p">)</span>
+        <span class="c">#We need to set the failfast option in this way because</span>
+        <span class="c">#nose.core.TextTestRunner hides some fields of unittest.TextTestRunner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span> <span class="o">=</span> <span class="n">failfast</span>
+
+    <span class="k">def</span> <span class="nf">wantMutation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">filename</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s">&#39;.py&#39;</span><span class="p">)</span> <span class="ow">and</span>
+               <span class="n">filename</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mutations_path</span><span class="p">)</span> <span class="ow">and</span>
+               <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">test_selector</span><span class="o">.</span><span class="n">wantFile</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="ow">and</span>
+               <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="ow">and</span> <span class="c">#  FIXME?: not that pythonic and get_source_mapping is alredy checking this</span>
+               <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getsize</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">test</span><span class="p">):</span>
+        <span class="n">quiet</span> <span class="o">=</span> <span class="n">Quiet</span><span class="p">()</span>
+        <span class="n">tcoverage</span> <span class="o">=</span> <span class="n">coverage_plugin</span><span class="o">.</span><span class="n">TestCoverage</span><span class="p">()</span>
+
+        <span class="c">#TODO: add data to result</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_makeResult</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;Running original tests&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span>
+
+        <span class="c">#TODO: move this to init for testing</span>
+        <span class="c">#remove mutations plugin from argv to avoid infinite recursion</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s">&#39;--with-mutations&#39;</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s">&#39;--with-mutations&#39;</span><span class="p">)</span>
+        <span class="c">#run all specified tests using the by test coverage</span>
+        <span class="n">success</span> <span class="o">=</span> <span class="n">nose</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">argv</span><span class="o">=</span><span class="n">args</span><span class="p">,</span> <span class="n">addplugins</span><span class="o">=</span><span class="p">[</span><span class="n">tcoverage</span><span class="p">])</span>
+
+        <span class="n">module_source_mapping</span> <span class="o">=</span> <span class="n">get_module_source_mapping</span><span class="p">()</span>
+        <span class="c">#if one or more tests failed and the fail fast option is True then abort</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">success</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">result</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;\Warning: Better results will be obtained if all tests pass. It is suggested to run this plugin with the -x (failfast) option.&#39;</span><span class="p">)</span>
+
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Testing mutated files&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span>
+        <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+        <span class="n">source_filenames</span> <span class="o">=</span> <span class="p">[</span><span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">tcoverage</span><span class="o">.</span><span class="n">coverage_info</span><span class="o">.</span><span class="n">iterkeys</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">wantMutation</span><span class="p">(</span><span class="n">f</span><span class="p">)]</span>
+        <span class="k">print</span> <span class="n">source_filenames</span>
+        <span class="k">print</span> <span class="n">tcoverage</span><span class="o">.</span><span class="n">coverage_info</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="n">module_importer</span> <span class="o">=</span> <span class="n">importer</span><span class="o">.</span><span class="n">ModuleImporter</span><span class="p">()</span>
+        <span class="n">total_mutations</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_mutations_alive</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="c">#collect the by test coverage and mutate the files</span>
+        <span class="k">for</span> <span class="n">source_filename</span> <span class="ow">in</span> <span class="n">source_filenames</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%s</span><span class="s">: &#39;</span> <span class="o">%</span> <span class="n">source_filename</span><span class="p">)</span>
+            <span class="n">code</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">source_filename</span><span class="p">)</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="c">#move this logic to line mutator</span>
+            <span class="k">for</span> <span class="n">mutator</span> <span class="ow">in</span> <span class="p">[</span><span class="n">StringMutator</span><span class="p">(),</span> <span class="n">NumberMutator</span><span class="p">(),</span> <span class="n">ArithmeticMutator</span><span class="p">(),</span> <span class="n">LogicalMutator</span><span class="p">(),</span> <span class="n">ComparisonMutator</span><span class="p">(),</span> <span class="n">FlowMutator</span><span class="p">()]:</span>
+                <span class="k">for</span> <span class="n">line_no</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">m_node</span> <span class="ow">in</span> <span class="n">LineMutator</span><span class="p">(</span><span class="n">mutator</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+                    <span class="c">#TODO?: move this to the line mutator class</span>
+                    <span class="c">#TODO: skip lines matching a given pattern, to avoid mutating prints, logs, __author__, __version__, etc</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tcoverage</span><span class="o">.</span><span class="n">coverage_info</span><span class="p">[</span><span class="n">source_filename</span><span class="p">][</span><span class="n">line_no</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                        <span class="k">continue</span>
+                    <span class="n">total_mutations</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">unload_modules</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">base_modules</span><span class="p">)</span>
+
+                    <span class="n">module_importer</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">module_source_mapping</span><span class="p">[</span><span class="n">source_filename</span><span class="p">],</span> <span class="nb">compile</span><span class="p">(</span><span class="n">m_node</span><span class="p">,</span> <span class="n">source_filename</span><span class="p">,</span> <span class="s">&#39;exec&#39;</span><span class="p">))</span>
+
+                    <span class="n">tests_set</span> <span class="o">=</span> <span class="n">tcoverage</span><span class="o">.</span><span class="n">coverage_info</span><span class="p">[</span><span class="n">source_filename</span><span class="p">][</span><span class="n">line_no</span><span class="p">]</span>
+                    <span class="c">#TODO: add plugin that limits the time a test can run (based on original times??)</span>
+                    <span class="n">success</span> <span class="o">=</span> <span class="n">nose</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">defaultTest</span><span class="o">=</span><span class="s">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">tests_set</span><span class="p">),</span> <span class="n">argv</span><span class="o">=</span><span class="n">args</span> <span class="o">+</span> <span class="p">[</span><span class="s">&#39;-x&#39;</span><span class="p">],</span> <span class="n">addplugins</span><span class="o">=</span><span class="p">[</span><span class="n">quiet</span><span class="p">])</span>
+
+                    <span class="k">if</span> <span class="n">success</span><span class="p">:</span>
+                        <span class="c">#if the tests still pass and the fail fast option is True then abort</span>
+                        <span class="n">total_mutations_alive</span> <span class="o">+=</span> <span class="mi">1</span>
+                        <span class="n">code_lines</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">&#39;</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;</span><span class="se">\n</span><span class="s">Mutation survived at line </span><span class="si">%d</span><span class="s">, </span><span class="si">%s</span><span class="s">: </span><span class="si">%s</span><span class="s">&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">line_no</span><span class="p">,</span> <span class="n">pos</span><span class="p">,</span> <span class="n">code_lines</span><span class="p">[</span><span class="n">line_no</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]))</span>
+
+                        <span class="c">#TODO: decide how to display the mutation. Coegen has really many problems and is really hard to fix it</span>
+                        <span class="c">#modified_source = codegen.to_source(m_node)</span>
+                        <span class="c">#TODO: generate a more accurate new source code, to resemble the original source code and show a more compact diff</span>
+                        <span class="c">#for l in difflib.unified_diff(code_lines, modified_source.split(&#39;\n&#39;), source_filename + &#39; (original)&#39;, source_filename + &#39; (mutation-%d)&#39; % pos):</span>
+                        <span class="c">#    self.stream.write(&#39;%s\n&#39; % l.rstrip())</span>
+
+                        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">failfast</span><span class="p">:</span>
+                            <span class="k">return</span> <span class="n">result</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s">&#39;.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">()</span>
+        <span class="n">stop_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;-&#39;</span> <span class="o">*</span> <span class="mi">70</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stream</span><span class="o">.</span><span class="n">writeln</span><span class="p">(</span><span class="s">&#39;</span><span class="si">%d</span><span class="s"> mutations performed (survived </span><span class="si">%d</span><span class="s">) on </span><span class="si">%d</span><span class="s"> files in </span><span class="si">%.3f</span><span class="s">s&#39;</span> <span class="o">%</span> <span class="p">(</span><span class="n">total_mutations</span><span class="p">,</span> <span class="n">total_mutations_alive</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">source_filenames</span><span class="p">),</span> <span class="n">stop_time</span> <span class="o">-</span> <span class="n">start_time</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span> <span class="nf">unload_modules</span><span class="p">(</span><span class="n">exclude</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Unload all modules in sys.modules that are not found in exclude_modules.&quot;&quot;&quot;</span>
+    <span class="n">exclude</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">exclude</span> <span class="ow">or</span> <span class="p">[])</span>
+    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">-</span> <span class="n">exclude</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">get_module_source_mapping</span><span class="p">():</span>
+    <span class="n">mapping</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="c">#FIXME?: I wanted to use iteritems instead but in some systems the modules changed during the iteration</span>
+    <span class="k">for</span> <span class="n">module_name</span><span class="p">,</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">sys</span><span class="o">.</span><span class="n">modules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="s">&#39;__file__&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">module</span><span class="o">.</span><span class="n">__file__</span><span class="p">:</span>
+            <span class="n">filename</span> <span class="o">=</span> <span class="n">module</span><span class="o">.</span><span class="n">__file__</span>
+            <span class="n">src_filename</span> <span class="o">=</span> <span class="n">nose</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">src</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">src_filename</span> <span class="o">==</span> <span class="n">filename</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">src_filename</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">mapping</span><span class="p">[</span><span class="n">src_filename</span><span class="p">]</span> <span class="o">=</span> <span class="n">module_name</span>
+    <span class="k">return</span> <span class="n">mapping</span>
+</pre></div>
+</div>
+</div>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to elcap&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#options">Options</a></li>
+<li><a class="reference internal" href="#plugin">Plugin</a></li>
+<li><a class="reference internal" href="#source">Source</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/index.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li><a href="#">elcap 0.1 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Sebastian Kreft.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.2.
+    </div>
+  </body>
+</html>

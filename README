@@ -1,0 +1,29 @@
+This is elcap version 0.1. A nose plugin that tests mutations of your source code.
+
+This is an early release. All comments are welcome.
+
+Acknowledgments:
+This plugin was built using some of the ideas present on Pymutester:
+http://pypi.python.org/pypi/pymutester
+
+Usage:
+ $ nosetest --with-mutations
+
+Testing:
+ $ pip install ludibrio, nose
+ $ nosetests tests
+
+Known Limitations:
+ - The mutators only work when the mutated node has lineno and col_offset
+ - The mutators only work when all nodes are mutated
+ - The TestCoverage plugin has some problems with isolation, hence some lines are not reported as covered, affecting the possible mutations 
+
+TODO features:
+ - add reporting of what was mutated (wanted to use codegen, but is really unfinished, already fixed many bugs, but htere is still lots to do)
+ - timeout: some times after a mutation the tests never finish
+ - exlude-mutation argument: regular expression or list of filenames to be exluded from the mutations
+ - exclude-line-like argument: exclude lines that match this regular expression to avoid mutation prints, logs or __version__, __author__
+ - argument to turn off/on only some mutators
+
+Changelog:
+- 08/02/2012: Released version 0.1 (basic functionality)

@@ -1,0 +1,4 @@
+.coverage
+*.pyc
+Elcap.egg-info/
+elcap.egg-info/
