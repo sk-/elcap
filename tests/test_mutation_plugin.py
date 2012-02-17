@@ -2,7 +2,7 @@ from unittest2 import TestCase
 from ludibrio import Stub
 from ludibrio import any
 
-from plugins import MutationRunner
+from elcap.plugins import MutationRunner
 
 class TestMutationRunner(TestCase):
     def test_init(self):
