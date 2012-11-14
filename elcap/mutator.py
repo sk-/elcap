@@ -1,7 +1,11 @@
+# Disabling naming convention and method could be a function check.
+# pylint: disable=C0103,R0201
+
 import ast
 
 
-#TODO: improve linemutator to also allows entities in whcih we look for the specific one.
+#TODO: improve linemutator to also allows entities in which we look for the
+#specific one.
 #TODO: add tests for that case X True, x+y yield
 class StringMutator(ast.NodeTransformer):
     def visit_Str(self, node):
@@ -44,7 +48,9 @@ class ComparisonMutator(ast.NodeTransformer):
                ast.IsNot: ast.Is}
 
     def visit_Compare(self, node):
-        return ast.Compare(node.left, [self.mapping[type(op)]() for op in node.ops], node.comparators)
+        return ast.Compare(node.left,
+                           [self.mapping[type(op)]() for op in node.ops],
+                           node.comparators)
 
 
 class LogicalMutator(ast.NodeTransformer):
@@ -56,10 +62,10 @@ class LogicalMutator(ast.NodeTransformer):
 
 
 class FlowMutator(ast.NodeTransformer):
-    def visit_Continue(self, node):
+    def visit_Continue(self, node):  # pylint: disable=W0613
         return ast.Break()
 
-    def visit_Break(self, node):
+    def visit_Break(self, node):  # pylint: disable=W0613
         return ast.Continue()
 
 
@@ -92,7 +98,8 @@ class LineMutator(ast.NodeTransformer):
         self.add_methods()
 
     def add_methods(self):
-        visit_methods = [getattr(self.mutator, m) for m in dir(self.mutator) if m.startswith('visit_')]
+        visit_methods = [getattr(self.mutator, m)
+                         for m in dir(self.mutator) if m.startswith('visit_')]
         for visit_method in visit_methods:
             def visit_helper(node):
                 self.current_counter += 1

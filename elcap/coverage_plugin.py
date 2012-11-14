@@ -15,7 +15,7 @@ class TestCoverage(Plugin):
         self._cover_instance = None
 
     @property
-    def coverInstance(self):
+    def cover_instance(self):
         if not self._cover_instance:
             import coverage
             try:
@@ -29,19 +29,20 @@ class TestCoverage(Plugin):
         self.enabled = True
 
     def begin(self):
-        self.coverInstance.erase()
-        self.coverInstance.exclude('#pragma[: ]+[nN][oO] [cC][oO][vV][eE][rR]')
+        self.cover_instance.erase()
+        self.cover_instance.exclude('#pragma[: ]+[nN][oO] [cC][oO][vV][eE][rR]')
 
-    def beforeTest(self, test):
-        self.coverInstance.start()
+    def beforeTest(self, test):  # pylint: disable=C0103,W0613
+        self.cover_instance.start()
 
-    def afterTest(self, test):
-        self.coverInstance.stop()
-        self.coverInstance.save()
-        for covered_filename in self.coverInstance.data.measured_files():
-            for line in self.coverInstance.data.lines[covered_filename]:
-                self.coverage_info[covered_filename][line].add(make_name(test.address()))
-        self.coverInstance.erase()
+    def afterTest(self, test):  # pylint: disable=C0103
+        self.cover_instance.stop()
+        self.cover_instance.save()
+        for covered_filename in self.cover_instance.data.measured_files():
+            for line in self.cover_instance.data.lines[covered_filename]:
+                self.coverage_info[covered_filename][line].add(
+                    make_name(test.address()))
+        self.cover_instance.erase()
 
 
 def make_name(test_addr):
@@ -51,5 +52,5 @@ def make_name(test_addr):
     else:
         head = module
     if call is not None:
-        return "%s:%s" % (head, call)
+        return '%s:%s' % (head, call)
     return head

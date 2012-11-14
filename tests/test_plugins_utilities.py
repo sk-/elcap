@@ -28,3 +28,13 @@ class TestUtilities(TestCase):
         for filename, module  in mapping.iteritems():
             self.assertTrue(filename.endswith('.py'), filename)
             self.assertTrue(os.path.exists(filename))
+
+    def test_get_src_filename(self):
+        self.assertIsNone(plugins.get_src_filename('nonexistent.py'))
+        self.assertIsNone(plugins.get_src_filename('nonexistent.pyl'))
+        filename = __file__
+        if filename.endswith('.pyc'):
+            filename = filename[:-1]
+        self.assertEquals(plugins.get_src_filename(filename), filename)
+        self.assertEquals(plugins.get_src_filename(filename + 'c'), filename)
+

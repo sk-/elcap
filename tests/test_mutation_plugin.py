@@ -12,26 +12,26 @@ class TestMutationRunner(TestCase):
     def test_want_mutation_python_file(self):
         runner = MutationRunner(mutations_path=None, test_selector=None)
         #self.assertTrue(runner.wantMutation('/mutations/path/submodule/module.py'))
-        self.assertFalse(runner.wantMutation('/mutations/path/submodule/module.pyc'))
+        self.assertFalse(runner.want_mutation('/mutations/path/submodule/module.pyc'))
 
     def test_want_mutation_file_in_mutations_path(self):
         runner = MutationRunner(mutations_path='/mutations/path', test_selector=None)
         #self.assertTrue(runner.wantMutation('/mutations/path/submodule/module.py'))
-        self.assertFalse(runner.wantMutation('/mutations/submodule/module.py'))
+        self.assertFalse(runner.want_mutation('/mutations/submodule/module.py'))
 
     def test_want_mutation_selector(self):
         with Stub() as selector:
             selector.wantFile(any()) >> True
             #selector.wantFile(any()) >> False
         runner = MutationRunner(mutations_path='/mutations/path', test_selector=selector)
-        self.assertFalse(runner.wantMutation('/mutations/path/submodule/module.py'))
+        self.assertFalse(runner.want_mutation('/mutations/path/submodule/module.py'))
         #self.assertTrue(runner.wantMutation('/mutations/path/submodule/module.py'))
 
-    def test_want_muation_nonexistent_file(self):
+    def test_want_mutation_nonexistent_file(self):
         with Stub() as selector:
             selector.wantFile(any()) >> False
         runner = MutationRunner(mutations_path='/mutations/path', test_selector=selector)
-        self.assertFalse(runner.wantMutation('/mutations/path/submodule/module.py'))
+        self.assertFalse(runner.want_mutation('/mutations/path/submodule/module.py'))
         #self.assertTrue(runner.wantMutation('/mutations/path/submodule/module.py'))
 
     def xtest_want_mutation_emptyfile(self):
