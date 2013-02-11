@@ -1,4 +1,5 @@
 from collections import defaultdict
+import time
 
 from nose.plugins.base import Plugin
 import nose.util
@@ -12,7 +13,9 @@ class TestCoverage(Plugin):
     def __init__(self):
         super(TestCoverage, self).__init__()
         self.coverage_info = defaultdict(lambda: defaultdict(set))
+        self.time_info = defaultdict(float)
         self._cover_instance = None
+        self._start_time = 0.0
 
     @property
     def cover_instance(self):
@@ -34,14 +37,16 @@ class TestCoverage(Plugin):
 
     def beforeTest(self, test):  # pylint: disable=C0103,W0613
         self.cover_instance.start()
+        self._start_time = time.time()
 
     def afterTest(self, test):  # pylint: disable=C0103
+        test_name = make_name(test.address())
+        self.time_info[test_name] = time.time() - self._start_time
         self.cover_instance.stop()
         self.cover_instance.save()
         for covered_filename in self.cover_instance.data.measured_files():
             for line in self.cover_instance.data.lines[covered_filename]:
-                self.coverage_info[covered_filename][line].add(
-                    make_name(test.address()))
+                self.coverage_info[covered_filename][line].add(test_name)
         self.cover_instance.erase()
 
 

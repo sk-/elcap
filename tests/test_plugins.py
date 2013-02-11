@@ -33,7 +33,8 @@ class TestTestCoveragePlugin(TestCase):
         testmodule.g()
         plugin.afterTest(testb)
 
-        testmodule_coverage = plugin.coverage_info[os.path.join(os.path.dirname(__file__), 'testmodule.py')]
+        testmodule_coverage = plugin.coverage_info[
+                os.path.join(os.path.dirname(__file__), 'testmodule.py')]
         filename = __file__
         if __file__.endswith('.pyc'):
             filename = filename[:-1]

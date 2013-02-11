@@ -2,22 +2,28 @@
 # pylint: disable=C0103,R0201
 
 import ast
+import importlib
+import inspect
 
 
-#TODO: improve linemutator to also allows entities in which we look for the
+class BaseMutator(ast.NodeTransformer):
+    """Base class for all user defined mutators."""
+
+
+#TODO: improve LineMutator to also allows entities in which we look for the
 #specific one.
 #TODO: add tests for that case X True, x+y yield
-class StringMutator(ast.NodeTransformer):
+class StringMutator(BaseMutator):
     def visit_Str(self, node):
         return ast.Str('XX' + node.s)
 
 
-class NumberMutator(ast.NodeTransformer):
+class NumberMutator(BaseMutator):
     def visit_Num(self, node):
         return ast.Num(node.n + 1)
 
 
-class ArithmeticMutator(ast.NodeTransformer):
+class ArithmeticMutator(BaseMutator):
     mapping = {ast.Add: ast.Sub,
                ast.Sub: ast.Add,
                ast.Mult: ast.Div,
@@ -35,7 +41,7 @@ class ArithmeticMutator(ast.NodeTransformer):
         return ast.BinOp(node.left, self.mapping[type(node.op)](), node.right)
 
 
-class ComparisonMutator(ast.NodeTransformer):
+class ComparisonMutator(BaseMutator):
     mapping = {ast.Eq: ast.NotEq,
                ast.NotEq: ast.Eq,
                ast.Gt: ast.LtE,
@@ -53,7 +59,7 @@ class ComparisonMutator(ast.NodeTransformer):
                            node.comparators)
 
 
-class LogicalMutator(ast.NodeTransformer):
+class LogicalMutator(BaseMutator):
     mapping = {ast.And: ast.Or,
                ast.Or: ast.And}
 
@@ -61,7 +67,7 @@ class LogicalMutator(ast.NodeTransformer):
         return ast.BoolOp(self.mapping[type(node.op)](), node.values)
 
 
-class FlowMutator(ast.NodeTransformer):
+class FlowMutator(BaseMutator):
     def visit_Continue(self, node):  # pylint: disable=W0613
         return ast.Break()
 
@@ -69,14 +75,14 @@ class FlowMutator(ast.NodeTransformer):
         return ast.Continue()
 
 
-class YieldMutator(ast.NodeTransformer):
+class YieldMutator(BaseMutator):
     def visit_Expr(self, node):
         if isinstance(node.value, ast.Yield):
             return ast.Return(node.value.value)
         return node
 
 
-class BooleanMutator(ast.NodeTransformer):
+class BooleanMutator(BaseMutator):
     mapping = {'True': 'False',
                'False': 'True'}
 
@@ -96,6 +102,7 @@ class LineMutator(ast.NodeTransformer):
         self.counter = 1
         self.current_counter = 0
         self.add_methods()
+        self.finished = True
 
     def add_methods(self):
         visit_methods = [getattr(self.mutator, m)
@@ -104,6 +111,7 @@ class LineMutator(ast.NodeTransformer):
             def visit_helper(node):
                 self.current_counter += 1
                 if self.current_counter == self.counter:
+                    self.finished = False
                     modified_node = visit_method(node)
                     if modified_node != node:
                         self.found = True
@@ -120,10 +128,40 @@ class LineMutator(ast.NodeTransformer):
 
     def next(self):
         self.found = False
+        self.finished = True
         self.current_counter = 0
         node = self.visit(ast.parse(self.code))
         if self.found:
             self.counter += 1
             return self.line, self.counter - 1, node
+        elif not self.finished:
+            self.counter += 1
+            return self.next()
         else:
             raise StopIteration
+
+
+def code_mutator(mutator_classes, code, line_filter):
+    # FIXME: it should probably a generic line split. The source code could have
+    # a different line separator than '\n'.
+    code_lines = code.split('\n')
+    for mutator_class in mutator_classes:
+        for line_no, pos, m_node in LineMutator(mutator_class(), code):
+            if line_filter(code_lines[line_no - 1], line_no):
+                yield line_no, pos, m_node, mutator_class.__name__
+
+
+def discover(modules=None, class_names=None):
+    modules = modules or ['elcap.mutator']
+    mutators = []
+    for module_name in modules:
+        module = importlib.import_module(module_name)
+        for member_name in dir(module):
+            if class_names and member_name not in class_names:
+                continue
+            member = getattr(module, member_name)
+            if (inspect.isclass(member) and
+                issubclass(member, BaseMutator) and not
+                member == BaseMutator):
+                mutators.append(member)
+    return mutators
